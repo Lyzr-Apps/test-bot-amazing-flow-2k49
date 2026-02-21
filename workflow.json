@@ -1,0 +1,76 @@
+{
+  "nodes": [
+    {
+      "id": "input_node",
+      "type": "Input",
+      "label": "User Input",
+      "nodeCategory": "input"
+    },
+    {
+      "id": "manager_agent",
+      "type": "Agent",
+      "label": "Test Analysis Coordinator",
+      "nodeCategory": "agent",
+      "agent_id": "69995b5033bee1a8dbeac2c3",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1,
+      "is_manager": true,
+      "managed_agents": [
+        "69995b26a63b170a3b816fab",
+        "69995b27938bc0103dbe0c07",
+        "69995b39a63b170a3b816fb0"
+      ]
+    },
+    {
+      "id": "bug_detection_agent",
+      "type": "Agent",
+      "label": "Bug Detection Agent",
+      "nodeCategory": "agent",
+      "agent_id": "69995b26a63b170a3b816fab",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1
+    },
+    {
+      "id": "report_generator_agent",
+      "type": "Agent",
+      "label": "Report Generator Agent",
+      "nodeCategory": "agent",
+      "agent_id": "69995b27938bc0103dbe0c07",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "temperature": 0.3,
+      "top_p": 1
+    },
+    {
+      "id": "notification_agent",
+      "type": "Agent",
+      "label": "Notification Agent",
+      "nodeCategory": "agent",
+      "agent_id": "69995b39a63b170a3b816fb0",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "top_p": 1,
+      "tools": ["GMAIL_SEND_EMAIL"]
+    },
+    {
+      "id": "output_node",
+      "type": "Output",
+      "label": "Analysis Results",
+      "nodeCategory": "end"
+    }
+  ],
+  "edges": [
+    { "source": "input_node", "target": "manager_agent" },
+    { "source": "manager_agent", "target": "bug_detection_agent" },
+    { "source": "manager_agent", "target": "report_generator_agent" },
+    { "source": "manager_agent", "target": "notification_agent" },
+    { "source": "bug_detection_agent", "target": "output_node" },
+    { "source": "report_generator_agent", "target": "output_node" },
+    { "source": "notification_agent", "target": "output_node" }
+  ]
+}

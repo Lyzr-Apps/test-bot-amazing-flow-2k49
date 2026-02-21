@@ -1,0 +1,41 @@
+{
+  "app_name": "TestPilot AI",
+  "pattern": "manager-subagent",
+  "agents": {
+    "test_analysis_coordinator": {
+      "agent_id": "69995b5033bee1a8dbeac2c3",
+      "name": "Test Analysis Coordinator",
+      "type": "manager",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "managed_agents": [
+        "69995b26a63b170a3b816fab",
+        "69995b27938bc0103dbe0c07",
+        "69995b39a63b170a3b816fb0"
+      ]
+    },
+    "bug_detection_agent": {
+      "agent_id": "69995b26a63b170a3b816fab",
+      "name": "Bug Detection Agent",
+      "type": "sub-agent",
+      "provider": "openai",
+      "model": "gpt-4.1"
+    },
+    "report_generator_agent": {
+      "agent_id": "69995b27938bc0103dbe0c07",
+      "name": "Report Generator Agent",
+      "type": "sub-agent",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5"
+    },
+    "notification_agent": {
+      "agent_id": "69995b39a63b170a3b816fb0",
+      "name": "Notification Agent",
+      "type": "sub-agent",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "tools": ["GMAIL_SEND_EMAIL"]
+    }
+  },
+  "primary_agent_id": "69995b5033bee1a8dbeac2c3"
+}

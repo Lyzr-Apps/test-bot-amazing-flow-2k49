@@ -1,0 +1,116 @@
+{
+  "agent_name": "Test Analysis Coordinator",
+  "agent_id": "69995b5033bee1a8dbeac2c3",
+  "description": "Coordinates the bug detection, report generation, and notification workflow. Routes user input to all sub-agents and aggregates their outputs into a single unified test summary with bug report and email confirmation.",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "bug_report": {
+      "bugs": [
+        {
+          "title": "string",
+          "severity": "string",
+          "description": "string",
+          "root_cause": "string",
+          "suggested_fix": "string"
+        }
+      ],
+      "total_bugs": "number",
+      "critical_count": "number",
+      "high_count": "number",
+      "medium_count": "number",
+      "low_count": "number",
+      "summary": "string"
+    },
+    "test_report": {
+      "test_summary": {
+        "total_tests": "number",
+        "passed": "number",
+        "failed": "number",
+        "pass_rate": "string"
+      },
+      "severity_breakdown": [
+        {
+          "severity": "string",
+          "count": "number",
+          "details": "string"
+        }
+      ],
+      "coverage_observations": "string",
+      "recommended_actions": [
+        {
+          "action": "string",
+          "priority": "string",
+          "reason": "string"
+        }
+      ],
+      "ci_verdict": {
+        "status": "string",
+        "reasoning": "string"
+      }
+    },
+    "notification": {
+      "email_sent": "boolean",
+      "recipients": [
+        "string"
+      ],
+      "subject": "string",
+      "reason": "string"
+    }
+  },
+  "example_response": {
+    "bug_report": {
+      "bugs": [
+        {
+          "title": "sample string",
+          "severity": "sample string",
+          "description": "sample string",
+          "root_cause": "sample string",
+          "suggested_fix": "sample string"
+        }
+      ],
+      "total_bugs": 0,
+      "critical_count": 0,
+      "high_count": 0,
+      "medium_count": 0,
+      "low_count": 0,
+      "summary": "sample string"
+    },
+    "test_report": {
+      "test_summary": {
+        "total_tests": 0,
+        "passed": 0,
+        "failed": 0,
+        "pass_rate": "sample string"
+      },
+      "severity_breakdown": [
+        {
+          "severity": "sample string",
+          "count": 0,
+          "details": "sample string"
+        }
+      ],
+      "coverage_observations": "sample string",
+      "recommended_actions": [
+        {
+          "action": "sample string",
+          "priority": "sample string",
+          "reason": "sample string"
+        }
+      ],
+      "ci_verdict": {
+        "status": "sample string",
+        "reasoning": "sample string"
+      }
+    },
+    "notification": {
+      "email_sent": false,
+      "recipients": [
+        "sample string"
+      ],
+      "subject": "sample string",
+      "reason": "sample string"
+    }
+  }
+}
