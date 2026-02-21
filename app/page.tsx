@@ -5,10 +5,8 @@ import { callAIAgent } from '@/lib/aiAgent'
 import { copyToClipboard } from '@/lib/clipboard'
 import {
   FiTerminal,
-  FiSettings,
   FiCopy,
   FiCheck,
-  FiX,
   FiChevronDown,
   FiChevronRight,
   FiPlay,
@@ -17,7 +15,6 @@ import {
   FiAlertCircle,
   FiSearch,
   FiTrash2,
-  FiMail,
   FiTrendingUp,
   FiTrendingDown,
   FiShield,
@@ -32,7 +29,6 @@ import { HiOutlineDocumentReport } from 'react-icons/hi'
 
 const AGENT_ID = '69995b5033bee1a8dbeac2c3'
 const HISTORY_KEY = 'testpilot_history'
-const EMAILS_KEY = 'testpilot_emails'
 
 // ─── Dracula Theme ───────────────────────────────────────────────────────────
 
@@ -115,7 +111,7 @@ interface NotificationResult {
 interface AnalysisResult {
   bug_report: BugReport
   test_report: TestReport
-  notification: NotificationResult
+  notification?: NotificationResult
 }
 
 interface HistoryEntry {
@@ -138,7 +134,6 @@ const AGENTS: AgentInfo[] = [
   { id: '69995b5033bee1a8dbeac2c3', name: 'Test Analysis Coordinator', role: 'Manager - orchestrates all sub-agents' },
   { id: '69995b26a63b170a3b816fab', name: 'Bug Detection Agent', role: 'Identifies bugs and severity levels' },
   { id: '69995b27938bc0103dbe0c07', name: 'Report Generator Agent', role: 'Generates test summaries and CI verdicts' },
-  { id: '69995b39a63b170a3b816fb0', name: 'Notification Agent', role: 'Sends email alerts via Gmail' },
 ]
 
 // ─── Sample Data ─────────────────────────────────────────────────────────────
@@ -223,12 +218,6 @@ const SAMPLE_RESULT: AnalysisResult = {
       reasoning: 'Deployment blocked due to 1 critical crash bug in JWT validation and 1 high-severity authorization bypass. These affect security-critical paths and must be resolved before merging.',
     },
   },
-  notification: {
-    email_sent: true,
-    recipients: ['team-lead@example.com'],
-    subject: 'TestPilot Alert: 1 Critical Bug Found - Deploy Blocked',
-    reason: 'Critical bugs detected that block deployment. Email notification sent to configured recipients.',
-  },
 }
 
 // ─── Response Parser ─────────────────────────────────────────────────────────
@@ -252,10 +241,7 @@ function parseAgentResponse(result: any): AnalysisResult | null {
     if (typeof data?.test_report === 'string') {
       try { data.test_report = JSON.parse(data.test_report) } catch { /* keep as-is */ }
     }
-    if (typeof data?.notification === 'string') {
-      try { data.notification = JSON.parse(data.notification) } catch { /* keep as-is */ }
-    }
-    if (!data?.bug_report && !data?.test_report && !data?.notification) {
+    if (!data?.bug_report && !data?.test_report) {
       return null
     }
     return data as AnalysisResult
@@ -401,16 +387,6 @@ function generateReportMarkdown(result: AnalysisResult): string {
       })
       lines.push('')
     }
-  }
-
-  const n = result?.notification
-  if (n) {
-    lines.push('## Notification')
-    lines.push(`Email Sent: ${n.email_sent ? 'Yes' : 'No'}`)
-    if (Array.isArray(n.recipients) && n.recipients.length > 0) {
-      lines.push(`Recipients: ${n.recipients.join(', ')}`)
-    }
-    if (n.reason) lines.push(`Reason: ${n.reason}`)
   }
 
   return lines.join('\n')
@@ -578,50 +554,19 @@ function DashboardView({
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [copied, setCopied] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const [emailInput, setEmailInput] = useState('')
-  const [recipientEmails, setRecipientEmails] = useState<string[]>([])
   const [severityFilters, setSeverityFilters] = useState<Record<string, boolean>>({ critical: true, high: true, medium: true, low: true })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // Load emails from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(EMAILS_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed)) setRecipientEmails(parsed)
-      }
-    } catch { /* ignore */ }
-  }, [])
 
   // Populate sample data
   useEffect(() => {
     if (showSample) {
       setInputText(SAMPLE_INPUT)
       setAnalysisResult(SAMPLE_RESULT)
-      setRecipientEmails(['team-lead@example.com'])
     } else {
       setInputText('')
       setAnalysisResult(null)
     }
   }, [showSample, setAnalysisResult])
-
-  const addEmail = useCallback(() => {
-    const trimmed = emailInput.trim()
-    if (trimmed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) && !recipientEmails.includes(trimmed)) {
-      const updated = [...recipientEmails, trimmed]
-      setRecipientEmails(updated)
-      localStorage.setItem(EMAILS_KEY, JSON.stringify(updated))
-      setEmailInput('')
-    }
-  }, [emailInput, recipientEmails])
-
-  const removeEmail = useCallback((email: string) => {
-    const updated = recipientEmails.filter((e) => e !== email)
-    setRecipientEmails(updated)
-    localStorage.setItem(EMAILS_KEY, JSON.stringify(updated))
-  }, [recipientEmails])
 
   const runAnalysis = useCallback(async () => {
     if (!inputText.trim() || loading) return
@@ -631,10 +576,7 @@ function DashboardView({
     setActiveAgentId(AGENT_ID)
 
     try {
-      const emails = recipientEmails.join(', ')
-      const message = emails.length > 0
-        ? `Notification recipients: ${emails}\n\nAnalyze the following test input:\n\n${inputText}`
-        : `Analyze the following test input:\n\n${inputText}`
+      const message = `Analyze the following test input:\n\n${inputText}`
 
       const result = await callAIAgent(message, AGENT_ID)
       setActiveAgentId(null)
@@ -667,7 +609,7 @@ function DashboardView({
       setLoading(false)
       setActiveAgentId(null)
     }
-  }, [inputText, loading, recipientEmails, history, setAnalysisResult, setHistory, setActiveAgentId])
+  }, [inputText, loading, history, setAnalysisResult, setHistory, setActiveAgentId])
 
   const handleCopyReport = useCallback(async () => {
     if (!analysisResult) return
@@ -688,64 +630,10 @@ function DashboardView({
       {/* ─── Left Column: Input Panel ─── */}
       <div className="w-full lg:w-[40%] flex flex-col gap-3 min-h-0">
         <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ background: '#282a36', borderColor: '#3d4057' }}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#f8f8f2' }}>
-              <FiTerminal className="w-4 h-4" style={{ color: '#bd93f9' }} />
-              Test Input
-            </h2>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
-              title="Email settings"
-            >
-              <FiSettings className="w-4 h-4" style={{ color: showSettings ? '#bd93f9' : '#9499b5' }} />
-            </button>
-          </div>
-
-          {showSettings && (
-            <div className="rounded-lg border p-3 space-y-2" style={{ background: '#1e1f29', borderColor: '#3d4057' }}>
-              <div className="text-xs font-semibold" style={{ color: '#9499b5' }}>
-                <FiMail className="inline w-3 h-3 mr-1" /> Notification Recipients
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEmail() } }}
-                  placeholder="email@example.com"
-                  className="flex-1 px-3 py-1.5 rounded-lg border text-sm font-mono outline-none transition-colors focus:border-[#bd93f9]"
-                  style={{ background: '#282a36', borderColor: '#3d4057', color: '#f8f8f2' }}
-                />
-                <button
-                  onClick={addEmail}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:opacity-80"
-                  style={{ background: '#bd93f9', color: '#fff' }}
-                >
-                  Add
-                </button>
-              </div>
-              {recipientEmails.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {recipientEmails.map((email) => (
-                    <span
-                      key={email}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono"
-                      style={{ background: '#363949', color: '#f8f8f2' }}
-                    >
-                      {email}
-                      <button onClick={() => removeEmail(email)} className="hover:text-[#ff5555] transition-colors">
-                        <FiX className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {recipientEmails.length === 0 && (
-                <p className="text-xs" style={{ color: '#9499b5' }}>No recipients added. Emails will be skipped.</p>
-              )}
-            </div>
-          )}
+          <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#f8f8f2' }}>
+            <FiTerminal className="w-4 h-4" style={{ color: '#bd93f9' }} />
+            Test Input
+          </h2>
 
           <textarea
             ref={textareaRef}
@@ -823,7 +711,7 @@ function DashboardView({
             <FiTerminal className="w-12 h-12 mb-3" style={{ color: '#3d4057' }} />
             <h3 className="text-base font-semibold mb-1" style={{ color: '#f8f8f2' }}>Paste your test output to get started</h3>
             <p className="text-sm text-center max-w-sm" style={{ color: '#9499b5' }}>
-              Paste test logs, CI output, or error traces. TestPilot AI will detect bugs, generate reports, and optionally notify your team.
+              Paste test logs, CI output, or error traces. TestPilot AI will detect bugs and generate structured reports with CI readiness verdicts.
             </p>
           </div>
         )}
@@ -847,27 +735,6 @@ function DashboardView({
                     <p className="text-xs mt-1" style={{ color: '#9499b5' }}>{displayResult.test_report.ci_verdict.reasoning}</p>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Email Notification Banner */}
-            {displayResult?.notification && (
-              <div
-                className="rounded-xl border px-4 py-2.5 flex items-center gap-2 text-xs"
-                style={{
-                  background: displayResult.notification.email_sent ? 'rgba(80,250,123,0.08)' : 'rgba(148,153,181,0.08)',
-                  borderColor: displayResult.notification.email_sent ? 'rgba(80,250,123,0.25)' : '#3d4057',
-                  color: displayResult.notification.email_sent ? '#50fa7b' : '#9499b5',
-                }}
-              >
-                <FiMail className="w-3.5 h-3.5 shrink-0" />
-                {displayResult.notification.email_sent ? (
-                  <span>
-                    Email sent to {Array.isArray(displayResult.notification.recipients) ? displayResult.notification.recipients.join(', ') : 'recipients'}{displayResult.notification.subject ? ` -- "${displayResult.notification.subject}"` : ''}
-                  </span>
-                ) : (
-                  <span>{displayResult.notification.reason ?? 'No critical bugs -- email notification skipped.'}</span>
-                )}
               </div>
             )}
 
@@ -1158,11 +1025,6 @@ function HistoryView({
                     {(entry?.result?.bug_report?.high_count ?? 0) > 0 && <SeverityBadge severity="high" />}
                     {(entry?.result?.bug_report?.medium_count ?? 0) > 0 && <SeverityBadge severity="medium" />}
                     {(entry?.result?.bug_report?.low_count ?? 0) > 0 && <SeverityBadge severity="low" />}
-                    {entry?.result?.notification?.email_sent ? (
-                      <FiMail className="w-3.5 h-3.5" style={{ color: '#50fa7b' }} title="Email sent" />
-                    ) : (
-                      <FiMail className="w-3.5 h-3.5" style={{ color: '#3d4057' }} title="No email" />
-                    )}
                   </div>
                 </button>
 
